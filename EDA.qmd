@@ -1,0 +1,97 @@
+---
+title: "ST 558 - Final Project"
+author: "Elvira McIntyre"
+format: html
+editor: visual
+---
+
+## Introduction
+
+This project explores data on Diabetes. The original data were obtained from the CDC's Behavioral Risk Factor Surveillance System (BRFSS), a health-related telephone survey that is collected annually by the CDC. The data contain self-reported health and lifestyle information and include 22 variables related to chronic disease, physical activity, general health, demographics, and access to health care. The primary outcome of interest in this project is 'Diabetes_binary', a binary indicator where:
+
+-   0 = No diabetes
+
+-   1 = Diabetes
+
+The majority of remaining variables are coded as 0/1 indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).
+
+For this project, a csv of the data set available on Kaggle for the year 2015 was used. The data set contains 253,680 survey responses to the CDC's 2015 BRFSS.
+
+This project consists of two sections:
+
+1.  **Exploratory Data Analysis**
+    -   The purpose of Exploratory Data Analysis is to better understand the structure of the data and how the data are stored. We will conduct basic data validation, including determining the number and type of variables included and whether there are missing values. The data will be cleaned and transformed/formatted to prepare it for analysis. Additionally, distributions and relationships between variables will be investigated to inform modeling.
+2.  **Modeling**
+    -   During modeling we will build a predictive model for diabetes status using tidymodels.
+
+## 1. Exploratory Data Analysis
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(psych)
+
+
+# read in data:
+data <- read.csv("data/diabetes_binary_health_indicators_BRFSS2015.csv",header=TRUE)
+#view(data)
+
+# explore structure and variable types
+str(data)
+head(data)
+glimpse(data)
+
+# basic data validation 
+#psych::describe(data)
+
+
+
+```
+
+Explore missing data: (note: no missing values were found in the data)
+
+```{r}
+# explore missing data
+# explore missing values
+sum(is.na(data))
+
+# set up a function to check NA values by column
+sum_na <- function(column){
+  sum(is.na(column))
+}
+sum_na(data)
+#for student_por, across all columns, run my function, sum na
+na_counts <- data |>
+  summarize(across(everything(), sum_na))
+#na_counts
+
+```
+
+```{r}
+table(data$Diabetes_binary)
+data |> 
+  ggplot(aes(x = factor(Diabetes_binary))) +
+  geom_bar(fill = "blue") +
+  labs(x = "Diabetes (0 = No, 1 = Yes)", y = "Count")
+
+table(
+  "Diabetes Binary" = data$Diabetes_binary,
+  "High Blood Pressure" = data$HighBP
+)
+
+table(
+  "Diabetes Binary" = data$Diabetes_binary,
+  "High Cholesterol" = data$HighChol
+)
+
+table(
+  "Diabetes Binary" = data$Diabetes_binary,
+  "Cholesterol Check" = data$CholCheck
+)
+
+names(data)
+
+
+
+
+```
