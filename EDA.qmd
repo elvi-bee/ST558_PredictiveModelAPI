@@ -15,14 +15,16 @@ This project explores data on Diabetes. The original data were obtained from the
 
 The majority of remaining variables are coded as 0/1 indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).
 
-For this project, a csv of the data set available on Kaggle for the year 2015 was used. The data set contains 253,680 survey responses to the CDC's 2015 BRFSS.
+For this project, a csv of the data available on Kaggle for the year 2015 was used. The data contain 253,680 responses.
 
 This project consists of two sections:
 
 1.  **Exploratory Data Analysis**
-    -   The purpose of Exploratory Data Analysis is to better understand the structure of the data and how the data are stored. We will conduct basic data validation, including determining the number and type of variables included and whether there are missing values. The data will be cleaned and transformed/formatted to prepare it for analysis. Additionally, distributions and relationships between variables will be investigated to inform modeling.
+    -   The purpose of Exploratory Data Analysis is to better understand the structure of the data and how the data are stored. We will conduct basic data validation, including determining the number and type of variables included and whether there are missing values. The data will be cleaned and transformed/formatted to prepare it for exploratory analysis and modeling. Additionally, distributions and relationships between variables will be investigated to inform modeling.
 2.  **Modeling**
     -   During modeling we will build a predictive model for diabetes status using tidymodels.
+    -   Include more info about purpose of modeling
+    -   [Click here for the Modeling Page](Modeling.html)
 
 ## 1. Exploratory Data Analysis
 
@@ -30,21 +32,42 @@ This project consists of two sections:
 library(tidyverse)
 library(readxl)
 library(psych)
+library(janitor)
+library(skimr)
+library(ggplot2)
+library(forcats)
 
-
-# read in data:
-data <- read.csv("data/diabetes_binary_health_indicators_BRFSS2015.csv",header=TRUE)
-#view(data)
+# read in data and clean col names
+data <- read.csv("data/diabetes_binary_health_indicators_BRFSS2015.csv",header=TRUE) |>
+  clean_names()
+view(data)
 
 # explore structure and variable types
 str(data)
 head(data)
 glimpse(data)
 
-# basic data validation 
-#psych::describe(data)
+# basic data cleaning
+# convert to factors
+names(data)
+var_factors <- c("diabetes_binary", "high_bp", "high_chol", "chol_check",
+"smoker", "stroke", "heart_diseaseor_attack",
+"phys_activity", "fruits", "veggies", "hvy_alcohol_consump",
+"any_healthcare", "no_docbc_cost", "gen_hlth", "ment_hlth",
+"phys_hlth", "diff_walk", "sex", "age", "education", "income")
+data <- data |>
+mutate(across(all_of(var_factors), as.factor))
 
-
+# clean factor labels for select variables
+data <- data |>
+  mutate(
+    high_bp = fct_recode(high_bp, "No" = "0", "Yes" = "1"),
+    high_chol = fct_recode(high_chol, "No" = "0", "Yes" = "1"),
+    phys_activity = fct_recode(phys_activity, "No" = "0", "Yes" = "1"),
+    diff_walk = fct_recode(diff_walk, "No" = "0", "Yes" = "1"),
+    heart_diseaseor_attack = fct_recode(heart_diseaseor_attack, "No" = "0", "Yes" = "1"),
+    diabetes_binary = fct_recode(diabetes_binary, "No" = "0", "Yes" = "1")
+  )
 
 ```
 
@@ -66,32 +89,347 @@ na_counts <- data |>
 #na_counts
 
 ```
+### Response Variable
+The response variable is diabetes_binary. The majority of individuals reported no diabetes: 218,334 individuals reported no diabetes, while 35,346 individuals reported diabetes. 
+```{r}
+#table(data$diabetes_binary)
+data |>
+count(diabetes_binary) |>
+mutate(prop = n / sum(n))
+
+
+data |> 
+  ggplot(aes(x = diabetes_binary)) +
+  geom_bar(fill = "blue") +
+  labs(title = "Distribution of Diabetes Status",
+    x = "Diabetes", y = "Count")
+
+```
+
+
+### Predictor Variables
+#### Binary Variables
+Associations between all binary variables and diabetes were evaluated. The strongest associations appeared between diabetes and high blood pressure, high cholesterol, heart disease or attack status, physical activity, and difficulty walking. Proportions are available below, and the appendix contains additional visuals for variables with weaker associations (e.g. fruits, sex, etc.)
+```{r}
+
+# High BP
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "High Blood Pressure" = data$high_bp
+)
+ggplot(data, aes(x = high_bp, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by High Blood Pressure",
+y = "Proportion")
+
+# High Chol
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "High Cholesterol" = data$high_chol
+)
+ggplot(data, aes(x = high_chol, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by High Cholesterol",
+y = "Proportion")
+
+# Stroke
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Stroke" = data$stroke
+)
+ggplot(data, aes(x = stroke, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Stroke Status",
+y = "Proportion")
+
+# heart_diseaseor_attack
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Heart Disease or Attack" = data$heart_diseaseor_attack
+)
+ggplot(data, aes(x = heart_diseaseor_attack, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Heart Disease or Attack Status",
+y = "Proportion")
+
+#diff_walk
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Difficulty Walking" = data$diff_walk
+)
+ggplot(data, aes(x = diff_walk, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Difficulty Walking",
+y = "Proportion")
+
+#phys_activity
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Physical Activity in Past 30 Days" = data$phys_activity
+)
+ggplot(data, aes(x = phys_activity, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Phys Activity Status",
+y = "Proportion")
+
+```
+
+#### Numeric Variables
+Among the number/continuous variables we looked at the relationship between Diabetes Status and Body Mass Index, Physical Health and Mental Health. 
+Plots and tables below indicate that individuals with Diabetes tend to have a higher mean and median BMI.
+Physical Health was measured as the number of days in the past month when physical health was not good. Individuals with diabetes reported more days of poor physical health. 
+Mental health was measured as the number of days in the past month when mental health was not good. Individuals with diabetes reported slightly more days of poor mental health, but this relationship was much weaker.
 
 ```{r}
-table(data$Diabetes_binary)
-data |> 
-  ggplot(aes(x = factor(Diabetes_binary))) +
-  geom_bar(fill = "blue") +
-  labs(x = "Diabetes (0 = No, 1 = Yes)", y = "Count")
+# BMI
+ggplot(data, aes(x = bmi, fill = diabetes_binary)) +
+  geom_histogram(alpha = 0.5, position = "identity", bins = 40) +
+  labs(title = "BMI Distribution by Diabetes Status",
+       x = "BMI", 
+       y = "Count",
+       fill = "Diabetes Status")
 
+ggplot(data, aes(x = diabetes_binary, y = bmi, fill = diabetes_binary)) +
+  geom_boxplot() +
+  labs(
+    title = "BMI by Diabetes Status",
+    x = "Diabetes Status",
+    y = "BMI",
+    fill = "Diabetes Status"
+  ) +
+  theme_minimal()
+
+bmi_summary <- data |>
+  group_by(diabetes_binary) |>
+  summarize(
+    n = n(),
+    mean_bmi   = mean(bmi),
+    median_bmi = median(bmi),
+    sd_bmi     = sd(bmi)
+  )
+
+bmi_summary
+
+
+# ment_health and phys_health
+data <- data |>
+  mutate(
+    ment_hlth_num = as.numeric(as.character(ment_hlth)),
+    phys_hlth_num = as.numeric(as.character(phys_hlth))
+  )
+ggplot(data, aes(x = diabetes_binary, y = ment_hlth_num, fill = diabetes_binary)) +
+  geom_boxplot() +
+  labs(
+    title = "Days of Poor Mental Health by Diabetes Status",
+    x = "Diabetes Status",
+    y = "Poor Mental Health Days (0–30)"
+  ) +
+  theme_minimal()
+
+
+ggplot(data, aes(x = diabetes_binary, y = phys_hlth_num, fill = diabetes_binary)) +
+  geom_boxplot() +
+  labs(
+    title = "Days of Poor Physical Health by Diabetes Status",
+    x = "Diabetes Status",
+    y = "Poor Physical Health Days (0–30)"
+  ) +
+  theme_minimal()
+
+
+ment_phys_summary <- data |>
+  group_by(diabetes_binary) |>
+  summarize(
+    mean_ment_hlth = mean(ment_hlth_num, na.rm = TRUE),
+    median_ment_hlth = median(ment_hlth_num, na.rm = TRUE),
+    mean_phys_hlth = mean(phys_hlth_num, na.rm = TRUE),
+    median_phys_hlth = median(phys_hlth_num, na.rm = TRUE)
+  )
+
+ment_phys_summary
+
+```
+
+#### Ordinal Variables
+
+Ordinal variables included Age, General Health (self-rated), Income, and Education.
+
+Diabetes prevalence appears to increase steadily across Age groups. 
+Similarly, a strong patterns is present in General Health. Individuals rating their health as “Fair” or “Poor” show higher diabetes prevalence than those reporting “Good,” “Very Good,” or “Excellent” general health.
+Income also shows a clear inverse relationship with diabetes, with lower-income categories showing higher diabetes prevalence.
+Education shows a slight pattern with a modest decrease in diabetes prevalence with higher educational attainment, but the differences between adjacent categories are smaller than those seen for age, general health, or income.
+
+Overall, the ordinal variables display relationships with diabetes prevalence, particularly age and general health.
+
+```{r}
+# Convert ordinal vars to ordered factors with labels
+data <- data |>
+  mutate(
+    age = fct_recode(age,
+                     "18–24" = "1", "25–29" = "2", "30–34" = "3", "35–39" = "4",
+                     "40–44" = "5", "45–49" = "6", "50–54" = "7", "55–59" = "8",
+                     "60–64" = "9", "65–69" = "10", "70–74" = "11", "75–79" = "12",
+                     "80+" = "13"),
+    age = fct_relevel(age, 
+                      "18–24","25–29","30–34","35–39","40–44","45–49","50–54",
+                      "55–59","60–64","65–69","70–74","75–79","80+"),
+    
+    gen_hlth = fct_recode(gen_hlth,
+                          "Excellent" = "1",
+                          "Very Good" = "2",
+                          "Good" = "3",
+                          "Fair" = "4",
+                          "Poor" = "5"),
+    gen_hlth = fct_relevel(gen_hlth,
+                           "Excellent","Very Good","Good","Fair","Poor"),
+    
+    education = fct_recode(education,
+                           "Never attended" = "1",
+                           "Elementary" = "2",
+                           "Some high school" = "3",
+                           "High school grad" = "4",
+                           "Some college" = "5",
+                           "College graduate" = "6"),
+    
+    income = fct_recode(income,
+                        "<$10k" = "1", "$10–15k" = "2", "$15–20k" = "3",
+                        "$20–25k" = "4", "$25–35k" = "5", "$35–50k" = "6",
+                        "$50–75k" = "7", ">$75k" = "8")
+  )
+
+# Age
+ggplot(data, aes(x = age, fill = diabetes_binary)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Proportion of Diabetes by Age Group",
+    x = "Age Group",
+    y = "Proportion"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal()
+
+# General Health
+ggplot(data, aes(x = gen_hlth, fill = diabetes_binary)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Diabetes Proportion by Self-Rated General Health",
+    x = "General Health Rating",
+    y = "Proportion"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal()
+
+# Education
+ggplot(data, aes(x = education, fill = diabetes_binary)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Proportion of Diabetes by Education Level",
+    x = "Education Level",
+    y = "Proportion"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal()
+
+# Income
+ggplot(data, aes(x = income, fill = diabetes_binary)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Proportion of Diabetes by Income Category",
+    x = "Income Level",
+    y = "Proportion"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal()
+
+
+```
+
+
+
+## Appendix
+```{r}
+
+# Binary Variables with weak associations
+# Smoker
 table(
-  "Diabetes Binary" = data$Diabetes_binary,
-  "High Blood Pressure" = data$HighBP
+  "Diabetes Binary" = data$diabetes_binary,
+  "Smoker" = data$smoker
 )
-
+ggplot(data, aes(x = smoker, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Smoker Status",
+y = "Proportion")
+# Chol Check
 table(
-  "Diabetes Binary" = data$Diabetes_binary,
-  "High Cholesterol" = data$HighChol
+  "Diabetes Binary" = data$diabetes_binary,
+  "Cholesterol Check" = data$chol_check
 )
+ggplot(data, aes(x = chol_check, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Cholesterol Check Status",
+y = "Proportion")
 
+#fruits
 table(
-  "Diabetes Binary" = data$Diabetes_binary,
-  "Cholesterol Check" = data$CholCheck
+  "Diabetes Binary" = data$diabetes_binary,
+  "Fruit Consumption" = data$fruits
 )
+ggplot(data, aes(x = fruits, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Fruit Consumption Status",
+y = "Proportion")
 
-names(data)
+#veggies
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Vegetable Consumption" = data$veggies
+)
+ggplot(data, aes(x = veggies, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Vegetable Consumption Status",
+y = "Proportion")
+#hvy_alcohol_consump
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Heavy Alcohol Consumption" = data$hvy_alcohol_consump
+)
+ggplot(data, aes(x = hvy_alcohol_consump, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Alcohol Consumption Status",
+y = "Proportion")
+
+#any_healthcare
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Have any kind of health caverage" = data$any_healthcare
+)
+ggplot(data, aes(x = any_healthcare, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Health Care Status",
+y = "Proportion")
+#no_docbc_cost
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Did not see Doctor bc of cost" = data$no_docbc_cost
+)
+ggplot(data, aes(x = no_docbc_cost, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by No Doctor bc Cost Status",
+y = "Proportion")
+#sex
+table(
+  "Diabetes Binary" = data$diabetes_binary,
+  "Sex" = data$sex
+)
+ggplot(data, aes(x = sex, fill = diabetes_binary)) +
+geom_bar(position = "fill") +
+labs(title = "Proportion of Diabetes by Sex",
+y = "Proportion")
 
 
 
 
 ```
+
+
+
