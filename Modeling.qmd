@@ -5,7 +5,7 @@ format: html
 editor: visual
 ---
 
-## Introduction
+## 1. Introduction
 
 This project explores data on Diabetes. The original data were obtained from the CDC's Behavioral Risk Factor Surveillance System (BRFSS), a health-related telephone survey that is collected annually by the CDC. The data contain self-reported health and lifestyle information and include 22 variables related to chronic disease, physical activity, general health, demographics, and access to health care. The primary outcome of interest in this project is 'Diabetes_binary', a binary indicator where:
 
@@ -19,7 +19,12 @@ During the Exploratory Data Analysis many variables showed interesting relations
 [Click here to go back to the EDA page.](EDA.html)
 In this section we will proceed to construct two models using selected variables from the aforementioned data.
 
-### Variable Selection
+### 1.1 Model Definitions
+
+#### 1.1.1 Classification Tree
+#### 1.1.2 Random Forest
+
+### 1.2 Variable Selection
 
 Based on the results of the Exploratory Data Analysis, five predictors were selected that showed the strongest relationships with diabetes. **High blood pressure** and **high cholesterol** were two of the most strongly associated binary indicators. **Difficulty walking** was another strong binary predictor. **BMI** was the strongest continuous predictor. Finally, **age** showed a clear relationship, with diabetes prevalence increasing steadily across older age groups.
 
@@ -35,11 +40,14 @@ Summary of variables that were selected:
 
 -   **Difficulty Walking** (diff_walk): binary, 0 = no, 1 = yes
 
+
+
 ## 2. Modeling
 
 Classification Tree Random Forest Models will be constructed and tested to determine the best model for the data. 
 
-### 2.1 Creating Training and Test Splits and Cross Validation
+### 2.1 Data Preparation
+#### 2.1.1 Creating Training and Test Splits and Cross Validation
 The data was split into a training (70% of the data) and test set (30% of the data). Then, 5-fold cross-validation is implemented to aid with selection of the ultimate best model.
 ```{r}
 # split training and test data
@@ -47,11 +55,15 @@ library(tidyverse)
 library(tidymodels)
 library(readxl)
 library(janitor)
-# read in data and clean col names
+library(rpart.plot)
+library(vip)
+
+# Read in data and clean column names
 data <- read.csv("data/diabetes_binary_health_indicators_BRFSS2015.csv",header=TRUE) |>
   clean_names()
 set.seed(11)
 
+# Factors
 data <- data |>
   mutate(diabetes_binary = factor(diabetes_binary))
 
@@ -65,9 +77,10 @@ diab_folds <- vfold_cv(diab_train, v = 5, strata = diabetes_binary)
 
 ```
 
-### 2.2 Recipe
+#### 2.1.2 Recipe
+Define the recipe using the following 5 predictors: high_bp, high_chol, diff_walk, bmi, age. Additionally, this step creates dummy variables for nominal predictors and normalizes numeric predictors. 
 ```{r}
-# recipe 
+# Recipe 
 diab_rec <- recipe(
   diabetes_binary ~ high_bp + high_chol + diff_walk + bmi + age,
   data = diab_train
@@ -78,7 +91,7 @@ diab_rec <- recipe(
 
 ### 2.3 Classification Tree
 ```{r}
-# Specicy model
+# Specify model
 tree_spec <- decision_tree(
   tree_depth = tune(),
   cost_complexity = tune(),
@@ -92,7 +105,7 @@ tree_wf <- workflow() |>
   add_recipe(diab_rec) |>
   add_model(tree_spec)
 
-# Resample + Tuning grid
+# Tuning grid and 5-fold cv with log loss, accuracy, roc_auc
 tree_grid <- grid_regular(
   cost_complexity(),
   tree_depth(),
@@ -103,23 +116,58 @@ tree_res <- tune_grid(
   tree_wf,
   resamples = diab_folds,
   grid = tree_grid,
-  metrics = metric_set(mn_log_loss, accuracy, roc_auc)
+  metrics = metric_set(mn_log_loss)
 )
+tree_res |> collect_metrics()
 
-# Best tuning parameters by log-loss
+# Select best tree
 best_tree <- select_best(tree_res, metric = "mn_log_loss")
 best_tree
 
 # Final tree
 tree_final <- tree_wf |>
   finalize_workflow(best_tree) |>
-  last_fit(diab_split)
+  last_fit(diab_split,
+           metrics = metric_set(mn_log_loss, accuracy, roc_auc, brier_class)
+           )
 
 tree_final |> collect_metrics()
+
+
+# Confusion matrix for the final tree (test set)
+tree_preds <- tree_final |> collect_predictions()
+
+tree_conf <- tree_preds |>
+  conf_mat(truth = diabetes_binary, estimate = .pred_class)
+
+tree_conf
+
+# Confusion matrix plot
+autoplot(tree_conf)
+
+
+
+# Fit final tree on FULL training data for plotting
+tree_final_full <- tree_wf |>
+  finalize_workflow(best_tree) |>
+  fit(data = diab_train)
+
+final_tree_fit <- tree_final_full |>
+  extract_fit_engine()
+
+rpart.plot(
+  final_tree_fit,
+  type = 2,
+  extra = 104,
+  fallen.leaves = TRUE,
+  roundint = FALSE,
+  main = "Final Classification Tree for Diabetes"
+)
 ```
 
 ### 2.4 Random Forest
 ```{r}
+# Specify model
 rf_spec <- rand_forest(
   mtry  = 2,
   trees = 100,
@@ -128,25 +176,93 @@ rf_spec <- rand_forest(
   set_engine("ranger", importance = "impurity") |>
   set_mode("classification")
 
+# Workflow
 rf_wf <- workflow() |>
   add_recipe(diab_rec) |>
   add_model(rf_spec)
 
-# 5-fold CV to estimate RF performance
+# 5-fold CV
 rf_res <- fit_resamples(
   rf_wf,
   resamples = diab_folds,
-  metrics   = metric_set(mn_log_loss, accuracy, roc_auc)
+  metrics   = metric_set(mn_log_loss)
 )
 
 rf_res |> collect_metrics()
 
-# Fit final RF on full training data and evaluate on test set
+# Final RF fit on full training data with evaluation on test set
 rf_final <- rf_wf |>
-  last_fit(diab_split)
+  last_fit(diab_split,
+           metrics = metric_set(mn_log_loss, accuracy, roc_auc, brier_class)
+           )
 
 rf_final |> collect_metrics()
+
+# Confusion matrix
+rf_preds <- rf_final |> collect_predictions()
+
+rf_conf <- rf_preds |>
+  conf_mat(truth = diabetes_binary, estimate = .pred_class)
+
+rf_conf
+
+# Confusion matrix plot
+autoplot(rf_conf)
+
+# Fit RF on FULL training data for importance
+rf_full <- rf_wf |>
+  fit(data = diab_train)
+
+rf_engine <- rf_full |>
+  extract_fit_engine()
+
+vip(
+  rf_engine,
+  num_features = 5,
+  main = "Variable Importance from Random Forest"
+)
 ```
+### 2.5 Comparing Model Results
+A comparison of classification Tree and Random Forest Models shows that the Random Forest Model slightly outperforms across all metrics.
+Most importantly, the Random Forest model achieved a lower log-loss, at 0.3334360 for Random Forest and 0.3483469 for the Classification Tree.
+
+The random forest also performed better across other metrics, achieving lower test-set Brier score (0.1018 vs. 0.1037), higher ROC AUC (0.795 vs. 0.769), and slightly higher accuracy (0.8636 vs. 0.8631). 
+
+Based on these results the Random Forest Model was selected as the final model to be used in the API component of this project.
+```{r}
+tree_logloss <- tree_final |>
+  collect_metrics() |>
+  mutate(model = "Classification Tree") |>
+  select(model, .metric, .estimate)
+
+rf_logloss <- rf_final |>
+  collect_metrics() |>
+  mutate(model = "Random Forest") |>
+  select(model, .metric, .estimate)
+
+logloss_comparison <- bind_rows(tree_logloss, rf_logloss)
+
+logloss_comparison
+```
+
+
+
+```{r}
+# Test-set log-loss for each model
+tree_test_metrics <- tree_final |>
+  collect_metrics() |>
+  mutate(model = "Classification Tree")
+
+rf_test_metrics <- rf_final |>
+  collect_metrics() |>
+  mutate(model = "Random Forest")
+
+model_comparison <- bind_rows(tree_test_metrics, rf_test_metrics)
+
+view(model_comparison)
+
+```
+
 
 ```{r}
 
