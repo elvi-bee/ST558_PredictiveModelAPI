@@ -16,7 +16,7 @@ This project explores data on Diabetes. The original data were obtained from the
 The majority of remaining variables are coded as binary (0/1) indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).
 
 During the Exploratory Data Analysis many variables showed interesting relationships with Diabetes prevalence. Among binary variables, high blood pressure, high cholesterol, heart disease or attack status, physical activity, and difficulty walking all showed relationships with diabetes prevalence. Among numeric variables, BMI and physical health showed the strongest relationships. Among ordinal variables, age and general health appeared to have stronger relations with diabetes that other ordinal variables.
-
+[Click here to go back to the EDA page.](EDA.html)
 In this section we will proceed to construct two models using selected variables from the aforementioned data.
 
 ### Variable Selection
@@ -35,6 +35,119 @@ Summary of variables that were selected:
 
 -   **Difficulty Walking** (diff_walk): binary, 0 = no, 1 = yes
 
-### Models
+## 2. Modeling
 
-Classification Tree Random Forest Model
+Classification Tree Random Forest Models will be constructed and tested to determine the best model for the data. 
+
+### 2.1 Creating Training and Test Splits and Cross Validation
+The data was split into a training (70% of the data) and test set (30% of the data). Then, 5-fold cross-validation is implemented to aid with selection of the ultimate best model.
+```{r}
+# split training and test data
+library(tidyverse)
+library(tidymodels)
+library(readxl)
+library(janitor)
+# read in data and clean col names
+data <- read.csv("data/diabetes_binary_health_indicators_BRFSS2015.csv",header=TRUE) |>
+  clean_names()
+set.seed(11)
+
+data <- data |>
+  mutate(diabetes_binary = factor(diabetes_binary))
+
+# 70/30 split
+diab_split <- initial_split(data, prop = 0.70, strata = diabetes_binary)
+diab_train <- training(diab_split)
+diab_test  <- testing(diab_split)
+
+# 5-fold cross-validation
+diab_folds <- vfold_cv(diab_train, v = 5, strata = diabetes_binary)
+
+```
+
+### 2.2 Recipe
+```{r}
+# recipe 
+diab_rec <- recipe(
+  diabetes_binary ~ high_bp + high_chol + diff_walk + bmi + age,
+  data = diab_train
+) |>
+  step_dummy(all_nominal_predictors()) |>
+  step_normalize(all_numeric_predictors())
+```
+
+### 2.3 Classification Tree
+```{r}
+# Specicy model
+tree_spec <- decision_tree(
+  tree_depth = tune(),
+  cost_complexity = tune(),
+  min_n = 20
+) |>
+  set_engine("rpart") |>
+  set_mode("classification")
+
+# Workflow
+tree_wf <- workflow() |>
+  add_recipe(diab_rec) |>
+  add_model(tree_spec)
+
+# Resample + Tuning grid
+tree_grid <- grid_regular(
+  cost_complexity(),
+  tree_depth(),
+  levels = c(5, 3)  
+)
+
+tree_res <- tune_grid(
+  tree_wf,
+  resamples = diab_folds,
+  grid = tree_grid,
+  metrics = metric_set(mn_log_loss, accuracy, roc_auc)
+)
+
+# Best tuning parameters by log-loss
+best_tree <- select_best(tree_res, metric = "mn_log_loss")
+best_tree
+
+# Final tree
+tree_final <- tree_wf |>
+  finalize_workflow(best_tree) |>
+  last_fit(diab_split)
+
+tree_final |> collect_metrics()
+```
+
+### 2.4 Random Forest
+```{r}
+rf_spec <- rand_forest(
+  mtry  = 2,
+  trees = 100,
+  min_n = 5
+) |>
+  set_engine("ranger", importance = "impurity") |>
+  set_mode("classification")
+
+rf_wf <- workflow() |>
+  add_recipe(diab_rec) |>
+  add_model(rf_spec)
+
+# 5-fold CV to estimate RF performance
+rf_res <- fit_resamples(
+  rf_wf,
+  resamples = diab_folds,
+  metrics   = metric_set(mn_log_loss, accuracy, roc_auc)
+)
+
+rf_res |> collect_metrics()
+
+# Fit final RF on full training data and evaluate on test set
+rf_final <- rf_wf |>
+  last_fit(diab_split)
+
+rf_final |> collect_metrics()
+```
+
+```{r}
+
+```
