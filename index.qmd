@@ -1,0 +1,12 @@
+---
+title: "ST 558 Final Project"
+author: "Elvira McIntyre"
+format: html
+editor: visual
+---
+<p>If you are not automatically redirected, click
+<a href="EDA.html">here for the EDA page</a>.</p>
+
+<script>
+  window.location.href = "EDA.html";
+</script>
