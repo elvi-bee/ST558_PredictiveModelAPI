@@ -13,7 +13,7 @@ This project explores data on Diabetes. The original data were obtained from the
 
 -   1 = Diabetes
 
-The majority of remaining variables are coded as 0/1 indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).
+The majority of remaining variables are coded as binary (0/1) indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).
 
 For this project, a csv of the data available on Kaggle for the year 2015 was used. The data contain 253,680 responses.
 
