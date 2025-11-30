@@ -1,0 +1,34 @@
+---
+title: "Modeling"
+author: "Elvira McIntyre"
+format: html
+editor: visual
+---
+## Introduction
+
+This project explores data on Diabetes. The original data were obtained from the CDC's Behavioral Risk Factor Surveillance System (BRFSS), a health-related telephone survey that is collected annually by the CDC. The data contain self-reported health and lifestyle information and include 22 variables related to chronic disease, physical activity, general health, demographics, and access to health care. The primary outcome of interest in this project is 'Diabetes_binary', a binary indicator where:
+
+-   0 = No diabetes
+
+-   1 = Diabetes
+
+The majority of remaining variables are coded as binary (0/1) indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).
+
+During the Exploratory Data Analysis many variables showed interesting relationships with Diabetes prevalence. Among binary variables, high blood pressure, high cholesterol, heart disease or attack status, physical activity, and difficulty walking all showed relationships with diabetes prevalence. Among numeric variables, BMI and physical health showed the strongest relationships. Among ordinal variables, age and general health appeared to have stronger relations with diabetes that other ordinal variables. 
+ 
+In this section we will proceed to construct two models using selected variables from the aforementioned data. 
+
+### Variables
+
+Based on the results of the Exploratory Data Analysis, five predictors were selected that showed the strongest relationships with diabetes. *High blood pressure* and *high cholesterol* were two of the most strongly associated binary indicators. *Difficulty walking* was another strong binary predictor. *BMI* was the strongest continuous predictor. Finally, *age* showed a clear relationship, with diabetes prevalence increasing steadily across older age groups.
+ 
+Summary of variables that were selected:
+- *High Blood Pressure* (high_bp): binary, 0 = no high BP/ 1 = high BP
+- *High Cholesterol* (high_chol): binary, 0 = no high Chol/ 1 = high Chol
+- *BMI* (bmi): continuous, 12 - 98
+- *Age* (age): ordinal, 13-level age categories, 1 = 18-24; 9 = 60-64; 13 = 80 or older
+- *Difficulty Walking* (diff_walk): binary, 0 = no, 1 = yes 
+
+### Models
+Classification Tree
+Random Forest Model
