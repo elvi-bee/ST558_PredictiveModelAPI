@@ -17,7 +17,7 @@ RUN R -e "install.packages(c('plumber', 'tidyverse', 'tidymodels', 'janitor', 'g
 
 WORKDIR /app
 
-COPY API/api_diabetes.R ./api_diabetes.R
+COPY api_diabetes.R ./api_diabetes.R
 COPY data ./data
 
 EXPOSE 8000
