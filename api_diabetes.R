@@ -1,7 +1,7 @@
 # api_diabetes.R
 # Plumber API for Diabetes RF model
 
-# ---- Libraries ----
+# Libraries
 library(tidyverse)
 library(tidymodels)
 library(janitor)

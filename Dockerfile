@@ -22,4 +22,4 @@ COPY data ./data
 
 EXPOSE 8000
 
-CMD ["R", "-e", "pr <- plumber::plumb('api_diabetes.R'); pr$run(host='0.0.0.0', port=8000)"]
+CMD ["R", "-e", "if (!requireNamespace('plumber', quietly = TRUE)) { install.packages('plumber', repos='https://cloud.r-project.org'); }; library(plumber); pr <- plumb('api_diabetes.R'); pr$run(host='0.0.0.0', port=8000)"]

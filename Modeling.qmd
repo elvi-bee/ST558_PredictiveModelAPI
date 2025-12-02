@@ -16,13 +16,20 @@ This project explores data on Diabetes. The original data were obtained from the
 The majority of remaining variables are coded as binary (0/1) indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).
 
 During the Exploratory Data Analysis many variables showed interesting relationships with Diabetes prevalence. Among binary variables, high blood pressure, high cholesterol, heart disease or attack status, physical activity, and difficulty walking all showed relationships with diabetes prevalence. Among numeric variables, BMI and physical health showed the strongest relationships. Among ordinal variables, age and general health appeared to have stronger relations with diabetes that other ordinal variables.
+
 [Click here to go back to the EDA page.](EDA.html)
+
 In this section we will proceed to construct two models using selected variables from the aforementioned data.
 
 ### 1.1 Model Definitions
 
 #### 1.1.1 Classification Tree
+
+A classification tree is a decision tree model. It predicts a categorical outcome (in this case, diabetes yes/no) by splitting the data into groups. At each split in the tree, the model chooses the predictor and cutoff that best separates classes. In other words, it predicts the majority class inside each leaf. Classification trees are easy to visualize and interpret but can be sensitive to small changes in the data. They are good for understanding patterns, but not necessarily for maximizing accuracy.
+
 #### 1.1.2 Random Forest
+
+A Random Forest model is a type of ensemble model. It builds many classification trees on bootstrapped data, meaning it re-samples data with replacement. Then it grows a full decision tree, repeats the process many times, and averages predictions. By averaging across many trees, random forest models reduce over-fitting, improve accuracy, capture nonlinear relationships more effectively than a single tree, and come up with more stable predictions. Random Forests and Ensemble models in general can be harder to explain and visualize than simpler models.
 
 ### 1.2 Variable Selection
 
@@ -40,15 +47,16 @@ Summary of variables that were selected:
 
 -   **Difficulty Walking** (diff_walk): binary, 0 = no, 1 = yes
 
-
-
 ## 2. Modeling
 
-Classification Tree Random Forest Models will be constructed and tested to determine the best model for the data. 
+Classification Tree Random Forest Models will be constructed and tested to determine the best model for the data.
 
 ### 2.1 Data Preparation
+
 #### 2.1.1 Creating Training and Test Splits and Cross Validation
+
 The data was split into a training (70% of the data) and test set (30% of the data). Then, 5-fold cross-validation is implemented to aid with selection of the ultimate best model.
+
 ```{r}
 # split training and test data
 library(tidyverse)
@@ -78,7 +86,9 @@ diab_folds <- vfold_cv(diab_train, v = 5, strata = diabetes_binary)
 ```
 
 #### 2.1.2 Recipe
-Define the recipe using the following 5 predictors: high_bp, high_chol, diff_walk, bmi, age. Additionally, this step creates dummy variables for nominal predictors and normalizes numeric predictors. 
+
+Define the recipe using the following 5 predictors: high_bp, high_chol, diff_walk, bmi, age. Additionally, this step creates dummy variables for nominal predictors and normalizes numeric predictors.
+
 ```{r}
 # Recipe 
 diab_rec <- recipe(
@@ -90,6 +100,7 @@ diab_rec <- recipe(
 ```
 
 ### 2.3 Classification Tree
+
 ```{r}
 # Specify model
 tree_spec <- decision_tree(
@@ -166,6 +177,7 @@ rpart.plot(
 ```
 
 ### 2.4 Random Forest
+
 ```{r}
 # Specify model
 rf_spec <- rand_forest(
@@ -222,13 +234,15 @@ vip(
   main = "Variable Importance from Random Forest"
 )
 ```
-### 2.5 Comparing Model Results
-A comparison of classification Tree and Random Forest Models shows that the Random Forest Model slightly outperforms across all metrics.
-Most importantly, the Random Forest model achieved a lower log-loss, at 0.3334360 for Random Forest and 0.3483469 for the Classification Tree.
 
-The random forest also performed better across other metrics, achieving lower test-set Brier score (0.1018 vs. 0.1037), higher ROC AUC (0.795 vs. 0.769), and slightly higher accuracy (0.8636 vs. 0.8631). 
+### 2.5 Comparing Model Results
+
+A comparison of classification Tree and Random Forest Models shows that the Random Forest Model slightly outperforms across all metrics. Most importantly, the Random Forest model achieved a lower log-loss, with 0.3334360 for Random Forest and 0.3483469 for the Classification Tree.
+
+The random forest also performed better across other metrics, achieving lower test-set Brier score (0.1018 vs. 0.1037), higher ROC AUC (0.795 vs. 0.769), and slightly higher accuracy (0.8636 vs. 0.8631).
 
 Based on these results the Random Forest Model was selected as the final model to be used in the API component of this project.
+
 ```{r}
 tree_logloss <- tree_final |>
   collect_metrics() |>
@@ -243,27 +257,4 @@ rf_logloss <- rf_final |>
 logloss_comparison <- bind_rows(tree_logloss, rf_logloss)
 
 logloss_comparison
-```
-
-
-
-```{r}
-# Test-set log-loss for each model
-tree_test_metrics <- tree_final |>
-  collect_metrics() |>
-  mutate(model = "Classification Tree")
-
-rf_test_metrics <- rf_final |>
-  collect_metrics() |>
-  mutate(model = "Random Forest")
-
-model_comparison <- bind_rows(tree_test_metrics, rf_test_metrics)
-
-view(model_comparison)
-
-```
-
-
-```{r}
-
 ```
