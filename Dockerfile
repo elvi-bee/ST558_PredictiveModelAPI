@@ -23,4 +23,4 @@ COPY data ./data
 
 EXPOSE 8000
 
-CMD ["R", "-e", "if (!requireNamespace('plumber', quietly = TRUE)) { install.packages('plumber', repos='https://cloud.r-project.org'); }; library(plumber); pr <- plumb('api_diabetes.R'); pr$run(host='0.0.0.0', port=8000)"]
+CMD ["R", "-e", "pkgs <- c('tidyverse','tidymodels','janitor','ggplot2','plumber'); for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p, repos='https://cloud.r-project.org'); library(tidyverse); library(tidymodels); library(janitor); library(ggplot2); library(plumber); pr <- plumb('api_diabetes.R'); pr$run(host='0.0.0.0', port=8000)"]
