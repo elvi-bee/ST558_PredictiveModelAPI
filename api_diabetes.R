@@ -2,7 +2,10 @@
 # Plumber API for Diabetes RF model
 
 # Libraries
-library(tidyverse)
+library(dplyr)
+library(readr)
+library(tidyr)
+library(tibble)
 library(tidymodels)
 library(janitor)
 library(ggplot2)
