@@ -148,14 +148,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>1 = Diabetes</p></li>
 </ul>
 <p>The majority of remaining variables are coded as binary (0/1) indicators (e.g., HighBP, HighChol, Stroke, Smoker), with some coded as ordinal categories (e.g., Age, Education, Income) or counts (e.g., MentHlth, PhysHlth).</p>
-<p>During the Exploratory Data Analysis many variables showed interesting relationships with Diabetes prevalence. Among binary variables, high blood pressure, high cholesterol, heart disease or attack status, physical activity, and difficulty walking all showed relationships with diabetes prevalence. Among numeric variables, BMI and physical health showed the strongest relationships. Among ordinal variables, age and general health appeared to have stronger relations with diabetes that other ordinal variables. <a href="EDA.html">Click here to go back to the EDA page.</a> In this section we will proceed to construct two models using selected variables from the aforementioned data.</p>
+<p>During the Exploratory Data Analysis many variables showed interesting relationships with Diabetes prevalence. Among binary variables, high blood pressure, high cholesterol, heart disease or attack status, physical activity, and difficulty walking all showed relationships with diabetes prevalence. Among numeric variables, BMI and physical health showed the strongest relationships. Among ordinal variables, age and general health appeared to have stronger relations with diabetes that other ordinal variables.</p>
+<p><a href="EDA.html">Click here to go back to the EDA page.</a></p>
+<p>In this section we will proceed to construct two models using selected variables from the aforementioned data.</p>
 <section id="model-definitions" class="level3">
 <h3 class="anchored" data-anchor-id="model-definitions">1.1 Model Definitions</h3>
 <section id="classification-tree" class="level4">
 <h4 class="anchored" data-anchor-id="classification-tree">1.1.1 Classification Tree</h4>
+<p>A classification tree is a decision tree model. It predicts a categorical outcome (in this case, diabetes yes/no) by splitting the data into groups. At each split in the tree, the model chooses the predictor and cutoff that best separates classes. In other words, it predicts the majority class inside each leaf. Classification trees are easy to visualize and interpret but can be sensitive to small changes in the data. They are good for understanding patterns, but not necessarily for maximizing accuracy.</p>
 </section>
 <section id="random-forest" class="level4">
 <h4 class="anchored" data-anchor-id="random-forest">1.1.2 Random Forest</h4>
+<p>A Random Forest model is a type of ensemble model. It builds many classification trees on bootstrapped data, meaning it re-samples data with replacement. Then it grows a full decision tree, repeats the process many times, and averages predictions. By averaging across many trees, random forest models reduce over-fitting, improve accuracy, capture nonlinear relationships more effectively than a single tree, and come up with more stable predictions. Random Forests and Ensemble models in general can be harder to explain and visualize than simpler models.</p>
 </section>
 </section>
 <section id="variable-selection" class="level3">
@@ -491,7 +495,7 @@ Prediction     0     1
 </section>
 <section id="comparing-model-results" class="level3">
 <h3 class="anchored" data-anchor-id="comparing-model-results">2.5 Comparing Model Results</h3>
-<p>A comparison of classification Tree and Random Forest Models shows that the Random Forest Model slightly outperforms across all metrics. Most importantly, the Random Forest model achieved a lower log-loss, at 0.3334360 for Random Forest and 0.3483469 for the Classification Tree.</p>
+<p>A comparison of classification Tree and Random Forest Models shows that the Random Forest Model slightly outperforms across all metrics. Most importantly, the Random Forest model achieved a lower log-loss, with 0.3334360 for Random Forest and 0.3483469 for the Classification Tree.</p>
 <p>The random forest also performed better across other metrics, achieving lower test-set Brier score (0.1018 vs.&nbsp;0.1037), higher ROC AUC (0.795 vs.&nbsp;0.769), and slightly higher accuracy (0.8636 vs.&nbsp;0.8631).</p>
 <p>Based on these results the Random Forest Model was selected as the final model to be used in the API component of this project.</p>
 <div class="cell">
@@ -521,20 +525,6 @@ Prediction     0     1
 7 Random Forest       roc_auc         0.795
 8 Random Forest       brier_class     0.102</code></pre>
 </div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test-set log-loss for each model</span></span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>tree_test_metrics <span class="ot">&lt;-</span> tree_final <span class="sc">|&gt;</span></span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect_metrics</span>() <span class="sc">|&gt;</span></span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">model =</span> <span class="st">"Classification Tree"</span>)</span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>rf_test_metrics <span class="ot">&lt;-</span> rf_final <span class="sc">|&gt;</span></span>
-<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect_metrics</span>() <span class="sc">|&gt;</span></span>
-<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">model =</span> <span class="st">"Random Forest"</span>)</span>
-<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>model_comparison <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(tree_test_metrics, rf_test_metrics)</span>
-<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="fu">view</span>(model_comparison)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
